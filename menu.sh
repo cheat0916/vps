@@ -1,16 +1,18 @@
 #!/bin/bash
-# VPS初始化主菜单脚本
+# VPS初始化主菜单脚本（完善版）
+# 作者: Cheat
 
-# ====================
+set -e
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # 无色
 
-# ====================
-# 多语言支持示范
+# 多语言支持
 declare -A LANG_ZH_CN=(
   [welcome]="欢迎使用VPS初始化脚本"
   [choose_lang]="请选择语言:"
@@ -26,6 +28,9 @@ declare -A LANG_ZH_CN=(
   [press_enter]="按回车键返回菜单..."
   [checking_deps]="检查依赖..."
   [installing]="缺少依赖，正在尝试安装："
+  [mod_missing]="模块 %s 不存在，正在下载..."
+  [mod_down_fail]="下载失败，请检查网络或仓库地址。"
+  [bye]="拜拜！"
 )
 
 declare -A LANG_ZH_TW=(
@@ -43,6 +48,9 @@ declare -A LANG_ZH_TW=(
   [press_enter]="按回車鍵返回菜單..."
   [checking_deps]="檢查依賴..."
   [installing]="缺少依賴，正在嘗試安裝："
+  [mod_missing]="模組 %s 不存在，正在下載..."
+  [mod_down_fail]="下載失敗，請檢查網路或倉庫地址。"
+  [bye]="掰掰！"
 )
 
 declare -A LANG_EN=(
@@ -60,18 +68,28 @@ declare -A LANG_EN=(
   [press_enter]="Press Enter to return to menu..."
   [checking_deps]="Checking dependencies..."
   [installing]="Missing dependency, trying to install:"
+  [mod_missing]="Module %s not found, downloading..."
+  [mod_down_fail]="Download failed, please check network or repo URL."
+  [bye]="Bye!"
 )
 
 CURRENT_LANG=LANG_ZH_CN
 
-# 简单函数取翻译，使用 declare -n 进行间接引用（需要 Bash 4.3+）
+# 简单函数取翻译，使用 declare -n 进行间接引用
 function t() {
   local key=$1
   declare -n lang_ref="$CURRENT_LANG"
   echo -e "${lang_ref[$key]}"
 }
 
-# 选择语言
+function t_format() {
+  # printf格式化输出，用于带变量的翻译
+  local key=$1; shift
+  declare -n lang_ref="$CURRENT_LANG"
+  printf "${lang_ref[$key]}\n" "$@"
+}
+
+# 语言选择
 function choose_language() {
   echo -e "${YELLOW}1) 简体中文"
   echo -e "2) 繁體中文"
@@ -85,21 +103,22 @@ function choose_language() {
   esac
 }
 
-# 显示简单Logo
+# 美化Logo，含作者名
 function show_logo() {
-  echo -e "${GREEN}"
+  echo -e "${CYAN}"
   echo " __      __      _       "
   echo " \ \    / /__ _ (_) __ _ "
   echo "  \ \/\/ / _ \ '_| |/ _\` |"
   echo "   \_/\_/\___/_| |_|\__,_|"
   echo "                         "
+  echo -e "       欢迎使用，作者: ${GREEN}Cheat${CYAN}"
   echo -e "${NC}"
 }
 
 # 检查依赖命令并安装
 function check_dependencies() {
   echo -e "$(t checking_deps)"
-  local deps=("curl" "wget" "lsb_release" "grep" "awk")
+  local deps=("curl" "wget" "lsb_release" "grep" "awk" "sed" "df" "free" "uname")
   for cmd in "${deps[@]}"; do
     if ! command -v "$cmd" &>/dev/null; then
       echo -e "${RED}$(t installing) $cmd${NC}"
@@ -114,7 +133,7 @@ function check_dependencies() {
   done
 }
 
-# 显示主机信息
+# 扩展主机信息显示
 function show_host_info() {
   echo -e "${BLUE}------ 当前主机信息 ------${NC}"
   echo "系统版本: $(lsb_release -d | cut -f2-)"
@@ -124,22 +143,55 @@ function show_host_info() {
   echo "内存总量: $(free -h | grep Mem | awk '{print $2}')"
   echo -n "磁盘空间: "
   df -h / | tail -1 | awk '{print $2 " 总，共用: " $3}'
-  # TODO: 可扩展添加网络IP、虚拟化、BBR、TUN检测等
+  echo "IP地址: $(hostname -I | awk '{print $1}')"
+  # 虚拟化检测
+  virt_type="未知"
+  if command -v systemd-detect-virt &>/dev/null; then
+    virt_type=$(systemd-detect-virt)
+  fi
+  echo "虚拟化: $virt_type"
+  # 检测是否启用 TUN
+  if [[ -c /dev/net/tun ]]; then
+    echo "TUN设备: 已启用"
+  else
+    echo "TUN设备: 未启用"
+  fi
+  # 检测BBR是否启用
+  bbr_status=$(sysctl net.ipv4.tcp_congestion_control 2>/dev/null | awk '{print $3}')
+  echo "BBR状态: ${bbr_status:-未知}"
   echo "--------------------------"
+  echo
 }
 
-# 下载模块脚本，如果缺失则自动下载
+# 自动更新模块
+function update_modules() {
+  mkdir -p modules
+  echo -e "${YELLOW}正在更新模块...${NC}"
+  local base_url="https://raw.githubusercontent.com/cheat0916/vps/main/modules"
+  for mod in hosts repos swap warp perf_test cleanup; do
+    echo -n "更新 $mod ... "
+    if wget -q -O "modules/${mod}.sh" "${base_url}/${mod}.sh"; then
+      chmod +x "modules/${mod}.sh"
+      echo -e "${GREEN}成功${NC}"
+    else
+      echo -e "${RED}失败${NC}"
+    fi
+  done
+  echo -e "${YELLOW}模块更新完成！${NC}\n"
+}
+
+# 下载并保证模块存在
 function ensure_module() {
   local module_name=$1
   local url_base="https://raw.githubusercontent.com/cheat0916/vps/main/modules"
   local module_path="./modules/${module_name}.sh"
   if [ ! -f "$module_path" ]; then
-    echo -e "${YELLOW}模块 ${module_name} 不存在，正在下载...${NC}"
+    t_format mod_missing "$module_name"
     mkdir -p ./modules
-    wget -q --show-progress -O "$module_path" "${url_base}/${module_name}.sh" || {
-      echo -e "${RED}下载失败，请检查网络或仓库地址。${NC}"
+    if ! wget -q --show-progress -O "$module_path" "${url_base}/${module_name}.sh"; then
+      echo -e "${RED}$(t mod_down_fail)${NC}"
       return 1
-    }
+    fi
     chmod +x "$module_path"
   fi
   return 0
@@ -164,25 +216,25 @@ function main_menu() {
     read -r choice
     case $choice in
       1)
-        ensure_module "hosts" && source ./modules/hosts.sh && hosts_menu
+        ensure_module "hosts" && source ./modules/hosts.sh && hosts_menu "$CURRENT_LANG"
         ;;
       2)
-        ensure_module "repos" && source ./modules/repos.sh && repos_menu
+        ensure_module "repos" && source ./modules/repos.sh && repos_menu "$CURRENT_LANG"
         ;;
       3)
-        ensure_module "swap" && source ./modules/swap.sh && swap_menu
+        ensure_module "swap" && source ./modules/swap.sh && swap_menu "$CURRENT_LANG"
         ;;
       4)
-        ensure_module "warp" && source ./modules/warp.sh && warp_menu
+        ensure_module "warp" && source ./modules/warp.sh && warp_menu "$CURRENT_LANG"
         ;;
       5)
-        ensure_module "perf_test" && source ./modules/perf_test.sh && perf_test_menu
+        ensure_module "perf_test" && source ./modules/perf_test.sh && perf_test_menu "$CURRENT_LANG"
         ;;
       6)
-        ensure_module "cleanup" && source ./modules/cleanup.sh && cleanup_menu
+        ensure_module "cleanup" && source ./modules/cleanup.sh && cleanup_menu "$CURRENT_LANG"
         ;;
       7)
-        echo "Bye!"
+        echo -e "$(t bye)"
         exit 0
         ;;
       *)
@@ -197,4 +249,5 @@ function main_menu() {
 # 主流程
 choose_language
 check_dependencies
+update_modules
 main_menu
