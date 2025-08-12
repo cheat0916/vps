@@ -17,7 +17,7 @@ function repos_menu() {
     echo "备份当前sources.list"
     sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak_$(date +%F_%T)
 
-    # 示例：切换为官方主服务器源（可自行根据版本定制）
+    # 示例：切换为官方主服务器源（根据版本调整）
     sudo tee /etc/apt/sources.list >/dev/null <<EOF
 deb http://archive.ubuntu.com/ubuntu/ ${ver} main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu/ ${ver}-updates main restricted universe multiverse
