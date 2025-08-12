@@ -1,11 +1,27 @@
 # VPS Initialization Script
 
-> 一款专业且多语言支持的 VPS 初始化工具，集成主机信息展示、软件源配置、swap 管理、Warp 安装、性能测试及磁盘清理等多功能模块。  
-> 适用于 Debian/Ubuntu 系统，方便快速初始化与维护 VPS 环境。
+![VPS Init Logo](https://raw.githubusercontent.com/cheat0916/vps/main/logo.png)
+
+> 一个专业、多语言支持的VPS初始化和维护工具，集成主机信息展示、软件源管理、Swap控制、Warp安装、性能测试和系统垃圾清理等多功能模块。  
+> 适用于 Debian/Ubuntu 系统，帮助你轻松快速完成VPS初始化配置。
 
 ---
 
-## 功能亮点
+## 目录结构
+
+vps/
+├── menu.sh           # 主菜单脚本，入口
+└── modules/          # 功能模块目录
+    ├── hosts.sh
+    ├── repos.sh
+    ├── swap.sh
+    ├── warp.sh
+    ├── perf_test.sh
+    └── cleanup.sh
+
+---
+
+## 功能特性
 
 - 🎨 多语言支持：简体中文、繁体中文、英文  
 - ⚙️ 模块化设计：支持按需加载并自动更新各功能模块  
@@ -19,91 +35,77 @@
 
 ---
 
-## 目录结构
-
-vps/
-  menu.sh           # 主菜单脚本
-  modules/
-    hosts.sh
-    repos.sh
-    swap.sh
-    warp.sh
-    perf_test.sh
-    cleanup.sh
-
----
-
 ## 快速开始
 
-1. 下载并运行主菜单脚本：
+你可以使用下面的命令一键下载并运行主菜单脚本：
 
-wget -N https://raw.githubusercontent.com/cheat0916/vps/main/menu.sh && bash menu.sh
+bash -c "$(wget -qO- https://raw.githubusercontent.com/cheat0916/vps/main/menu.sh)"
 
-2. 选择语言并进入主菜单  
-3. 根据提示选择需要执行的功能模块
+或者：
+
+curl -fsSL https://raw.githubusercontent.com/cheat0916/vps/main/menu.sh | bash
+
+> **提示：**  
+> - 以上两种方式都能保证脚本直接执行且支持复制粘贴  
+> - 脚本运行后，会提示选择语言并显示主菜单，按照提示操作即可
 
 ---
 
 ## 使用示例
 
-请输入选项数字： 6  
-开始清理无用日志和垃圾文件...  
-清理 systemd journal 日志...  
-清理 apt 缓存和自动删除无用依赖包...  
-清理旧内核...  
-清理用户缓存目录...  
-清理临时文件夹...  
+选择语言后，菜单界面如下：
 
-清理完成。磁盘空间情况：  
-清理前： 2.9G / 7.9G  
-清理后： 2.6G / 7.9G  
-Filesystem         Size  Used Avail Use% Mounted on  
-/dev/ploop40393p1  7.9G  2.6G  5.0G  34% /  
-建议定期检查系统磁盘使用情况，避免空间不足导致服务异常。
+欢迎使用VPS初始化脚本
 
----
+------ 当前主机信息 ------
+系统版本: Ubuntu 20.04.6 LTS
+内核版本: 5.4.0-42-generic
+架构: x86_64
+CPU: Intel(R) Xeon(R) CPU E5-2676 v3 @ 2.40GHz
+内存总量: 4.0G
+磁盘空间: 80G 总，共用: 20G
+--------------------------
 
-## 模块说明
+1. 在hosts中添加当前hostname
+2. 添加官方软件源
+3. swap管理
+4. 安装Warp
+5. 性能测试
+6. 磁盘及垃圾文件清理
+7. 退出
 
-模块名       | 功能描述                   
--------------|------------------------------
-hosts        | 在 /etc/hosts 添加当前主机名  
-repos        | 添加并更新官方软件源          
-swap         | 创建和管理 swap 文件          
-warp         | 安装和管理 Cloudflare Warp    
-perf_test    | 性能测试工具                  
-cleanup      | 清理系统日志和垃圾文件        
+请输入选项数字：
 
 ---
 
-## 依赖要求
+## 依赖环境
 
-- Bash 4.3+  
+- Bash 4.3及以上  
 - curl  
 - wget  
 - lsb_release  
 - grep  
 - awk  
 
-脚本会自动检测并尝试安装缺失依赖。
+脚本会自动检测并安装缺失依赖。
 
 ---
 
-## 版本更新策略
+## 更新说明
 
-- 主菜单脚本运行时自动检测缺失模块并下载最新版本  
-- 用户也可手动执行更新脚本同步模块代码  
-
----
-
-## 贡献指南
-
-欢迎提出 issues 或 pull requests，帮助完善本项目。  
-请确保代码风格一致，提交前通过测试。
+- 脚本设计为模块化结构，运行时自动下载或更新缺失模块，确保使用最新功能  
+- 推荐定期运行脚本，保持模块更新
 
 ---
 
-## 许可协议
+## 贡献与反馈
+
+欢迎提交 Issue 或 Pull Request，帮助完善本项目。  
+请确保代码风格规范，功能稳定。
+
+---
+
+## 许可证
 
 MIT License © Cheat
 
@@ -112,8 +114,7 @@ MIT License © Cheat
 ## 联系方式
 
 - GitHub: https://github.com/cheat0916/vps  
-- 邮箱: your-email@example.com （可选）
 
 ---
 
-感谢使用！祝你 VPS 管理更轻松高效！
+感谢使用，祝你 VPS 管理轻松高效！
