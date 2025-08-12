@@ -64,10 +64,11 @@ declare -A LANG_EN=(
 
 CURRENT_LANG=LANG_ZH_CN
 
-# 简单函数取翻译
+# 简单函数取翻译，使用 declare -n 进行间接引用（需要 Bash 4.3+）
 function t() {
   local key=$1
-  echo -e "${CURRENT_LANG[$key]}"
+  declare -n lang_ref="$CURRENT_LANG"
+  echo -e "${lang_ref[$key]}"
 }
 
 # 选择语言
@@ -121,7 +122,8 @@ function show_host_info() {
   echo "架构: $(uname -m)"
   echo "CPU: $(grep 'model name' /proc/cpuinfo | head -1 | cut -d: -f2- | sed 's/^[ \t]*//')"
   echo "内存总量: $(free -h | grep Mem | awk '{print $2}')"
-  echo "磁盘空间: $(df -h / | tail -1 | awk '{print $2 \" 总，共用: \" $3}')"
+  echo -n "磁盘空间: "
+  df -h / | tail -1 | awk '{print $2 " 总，共用: " $3}'
   # TODO: 可扩展添加网络IP、虚拟化、BBR、TUN检测等
   echo "--------------------------"
 }
@@ -129,7 +131,7 @@ function show_host_info() {
 # 下载模块脚本，如果缺失则自动下载
 function ensure_module() {
   local module_name=$1
-  local url_base="https://raw.githubusercontent.com/你的账号/你的仓库名/main/modules"
+  local url_base="https://raw.githubusercontent.com/cheat0916/vps/main/modules"
   local module_path="./modules/${module_name}.sh"
   if [ ! -f "$module_path" ]; then
     echo -e "${YELLOW}模块 ${module_name} 不存在，正在下载...${NC}"
