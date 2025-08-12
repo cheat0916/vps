@@ -6,10 +6,7 @@
 
 # VPS Initialization Script
 
-██████   ██████   ██████  
-██   ██  ██   ██  ██   ██ 
-██   ██  ██   ██  ██   ██ 
-██████   ██████   ██████  
+
                           
 A professional, multilingual VPS initialization and maintenance tool.  
 Supports Debian/Ubuntu systems, helping you quickly configure and maintain your VPS with ease.
