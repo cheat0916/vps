@@ -5,23 +5,22 @@ function repos_menu() {
   echo "检测系统类型，添加对应官方软件源..."
   if command -v lsb_release &>/dev/null; then
     dist=$(lsb_release -si)
-    ver=$(lsb_release -sr)
+    codename=$(lsb_release -c -s)
   else
     dist=$(awk -F= '/^ID=/{print $2}' /etc/os-release | tr -d '"')
-    ver=$(awk -F= '/^VERSION_ID=/{print $2}' /etc/os-release | tr -d '"')
+    codename=$(awk -F= '/^VERSION_CODENAME=/{print $2}' /etc/os-release | tr -d '"')
   fi
 
-  echo "系统：$dist 版本：$ver"
+  echo "系统：$dist 代号：$codename"
 
   if [[ "$dist" =~ (Ubuntu|Debian) ]]; then
     echo "备份当前sources.list"
     sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak_$(date +%F_%T)
 
-    # 示例：切换为官方主服务器源（根据版本调整）
     sudo tee /etc/apt/sources.list >/dev/null <<EOF
-deb http://archive.ubuntu.com/ubuntu/ ${ver} main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ ${ver}-updates main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ ${ver}-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ ${codename} main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ ${codename}-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ ${codename}-security main restricted universe multiverse
 EOF
 
     echo "更新软件源..."
