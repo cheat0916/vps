@@ -3,7 +3,7 @@
 ![VPS Init Logo](https://raw.githubusercontent.com/cheat0916/vps/main/logo.png)
 
 
-```
+
 # VPS Initialization Script
 
 ██████   ██████   ██████  
@@ -132,4 +132,4 @@ GitHub: https://github.com/cheat0916/vps
 ---
 
 感谢您的使用，祝您 VPS 管理顺利！
-```
+
