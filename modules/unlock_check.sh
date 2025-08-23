@@ -1,6 +1,6 @@
 #!/bin/bash
 ###
-# IPv4 + IPv6 多平台解锁检测（公网 IP + 彩色整齐表格 + IPv6 截断）
+# IPv4 + IPv6 多平台解锁检测（表头固定列宽 + IPv6 完整显示 + 彩色整齐）
 # 作者：ChatGPT
 # 依赖：curl
 ###
@@ -38,20 +38,13 @@ echo -e "${YELLOW}========== 本机 IPv4 + IPv6 多平台解锁检测 ==========
 echo "检测到公网 IP：$ip_list"
 echo "==========================================="
 
-# 截断 IPv6 显示
-short_ip() {
-    local ip=$1
-    if [[ "$ip" == *:* ]]; then
-        echo "${ip:0:16}…"
-    else
-        echo "$ip"
-    fi
-}
+# 设置固定列宽（IP列最长，可以完整显示 IPv6）
+# 类型 6, IP 39, Netflix 12, Disney+ 10, YouTube 10, ChatGPT 15, HBO Max 10, Hulu 10, Prime Video 12
+FORMAT="%-6s %-39s %-12s %-10s %-10s %-15s %-10s %-10s %-12s\n"
 
 # 输出表头
-printf "%-6s %-18s %-12s %-10s %-10s %-15s %-10s %-10s %-12s\n" \
-"类型" "IP地址" "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"
-printf "%0.s=" {1..110}
+printf "$FORMAT" "类型" "IP地址" "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"
+printf "%0.s=" {1..130}
 echo
 
 # 检测函数
@@ -60,7 +53,6 @@ check_ip() {
     local proto
     [[ "$ip" == *:* ]] && proto="IPv6" || proto="IPv4"
 
-    local ip_short=$(short_ip "$ip")
     local nf ds yt cg hb hl pr
 
     # Netflix
@@ -105,8 +97,7 @@ check_ip() {
     else pr="${YELLOW}异常($pr_code)${NC}"; fi
 
     # 输出固定列宽表格
-    printf "%-6s %-18s %-12s %-10s %-10s %-15s %-10s %-10s %-12s\n" \
-    "$proto" "$ip_short" "$nf" "$ds" "$yt" "$cg" "$hb" "$hl" "$pr"
+    printf "$FORMAT" "$proto" "$ip" "$nf" "$ds" "$yt" "$cg" "$hb" "$hl" "$pr"
 }
 
 # 遍历 IP 检测
