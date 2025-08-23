@@ -36,15 +36,15 @@ fi
 
 echo -e "${YELLOW}========== 本机 IPv4 + IPv6 多平台解锁检测 ==========${NC}"
 echo "检测到公网 IP：$ip_list"
-echo "==========================================="
+echo "==================================================="
 
-# 设置固定列宽（IP列最长，可以完整显示 IPv6）
-# 类型 6, IP 39, Netflix 12, Disney+ 10, YouTube 10, ChatGPT 15, HBO Max 10, Hulu 10, Prime Video 12
-FORMAT="%-6s %-39s %-12s %-10s %-10s %-15s %-10s %-10s %-12s\n"
+# 设置固定列宽（IP列放大到 50）
+# 类型 6, IP 50, Netflix 15, Disney+ 12, YouTube 12, ChatGPT 18, HBO Max 12, Hulu 12, Prime Video 15
+FORMAT="%-6s %-50s %-15s %-12s %-12s %-18s %-12s %-12s %-15s\n"
 
 # 输出表头
 printf "$FORMAT" "类型" "IP地址" "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"
-printf "%0.s=" {1..130}
+printf "%0.s=" {1..155}
 echo
 
 # 检测函数
