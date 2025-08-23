@@ -22,7 +22,8 @@ declare -A LANG_ZH_CN=(
   [option_4]="4. 安装Warp"
   [option_5]="5. 性能测试"
   [option_6]="6. 磁盘及垃圾文件清理"
-  [option_7]="7. 退出"
+  [option_7]="7. IPv6解锁检测"
+  [option_8]="8. 退出"
   [prompt]="请输入选项数字："
   [invalid]="无效选项，请重新输入。"
   [press_enter]="按回车键返回菜单..."
@@ -42,7 +43,8 @@ declare -A LANG_ZH_TW=(
   [option_4]="4. 安裝Warp"
   [option_5]="5. 性能測試"
   [option_6]="6. 磁碟及垃圾檔案清理"
-  [option_7]="7. 退出"
+  [option_7]="7. IPv6解鎖檢測"
+  [option_8]="8. 退出"
   [prompt]="請輸入選項數字："
   [invalid]="無效選項，請重新輸入。"
   [press_enter]="按回車鍵返回菜單..."
@@ -62,7 +64,8 @@ declare -A LANG_EN=(
   [option_4]="4. Install Warp"
   [option_5]="5. Performance test"
   [option_6]="6. Clean disk and junk files"
-  [option_7]="7. Exit"
+  [option_7]="7. IPv6 Unlock Check"
+  [option_8]="8. Exit"
   [prompt]="Please enter an option number:"
   [invalid]="Invalid option, please try again."
   [press_enter]="Press Enter to return to menu..."
@@ -168,7 +171,7 @@ function update_modules() {
   mkdir -p modules
   echo -e "${YELLOW}正在更新模块...${NC}"
   local base_url="https://raw.githubusercontent.com/cheat0916/vps/main/modules"
-  for mod in hosts repos swap warp perf_test cleanup; do
+  for mod in hosts repos swap warp perf_test cleanup unlock_check; do
     echo -n "更新 $mod ... "
     if wget -q -O "modules/${mod}.sh" "${base_url}/${mod}.sh"; then
       chmod +x "modules/${mod}.sh"
@@ -212,6 +215,7 @@ function main_menu() {
     echo -e "$(t option_5)"
     echo -e "$(t option_6)"
     echo -e "$(t option_7)"
+    echo -e "$(t option_8)"
     echo -n "$(t prompt) "
     read -r choice
     case $choice in
@@ -234,6 +238,9 @@ function main_menu() {
         ensure_module "cleanup" && source ./modules/cleanup.sh && cleanup_menu "$CURRENT_LANG"
         ;;
       7)
+        ensure_module "unlock_check" && bash ./modules/unlock_check.sh
+        ;;
+      8)
         echo -e "$(t bye)"
         exit 0
         ;;
