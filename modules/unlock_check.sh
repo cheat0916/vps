@@ -1,95 +1,131 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/bin/bash
+###
+# IPv4 + IPv6 多平台解锁检测（整齐表格，结果居中对齐）
+# 作者：ChatGPT
+###
 
-import socket
-import requests
+# 颜色
+GREEN=$'\033[0;32m'
+RED=$'\033[0;31m'
+YELLOW=$'\033[1;33m'
+NC=$'\033[0m'
 
-# ========= 配置 =========
-IPV6_TEST_URL = "https://api64.ipify.org"  # 获取公网IPv6
-IPV4_TEST_URL = "https://api.ipify.org"    # 获取公网IPv4
+# 测试目标
+NETFLIX_ORIGINAL="https://www.netflix.com/title/80018499"
+NETFLIX_MOVIE="https://www.netflix.com/title/70143836"
+DISNEY_TEST="https://www.disneyplus.com"
+YOUTUBE_TEST="https://www.youtube.com/red"
+CHATGPT_TEST="https://chat.openai.com/cdn-cgi/trace"
+HBOMAX_TEST="https://www.max.com/"
+HULU_TEST="https://www.hulu.com/"
+PRIME_TEST="https://www.primevideo.com/"
 
-# 平台检测函数（示例简化版）
-def check_netflix(ip_type):
-    return "完整解锁"
+# 获取公网 IP
+public_ipv4=$(curl -s --max-time 5 https://api.ipify.org)
+public_ipv6=$(curl -6 -s --max-time 5 https://api64.ipify.org)
 
-def check_disney(ip_type):
-    return "可访问"
+ip_list=""
+[ -n "$public_ipv6" ] && ip_list="$ip_list $public_ipv6"
+[ -n "$public_ipv4" ] && ip_list="$ip_list $public_ipv4"
 
-def check_youtube(ip_type):
-    return "可访问"
+if [ -z "$ip_list" ]; then
+    echo -e "${RED}未检测到公网 IPv4/IPv6，无法进行解锁检测！${NC}"
+    exit 1
+fi
 
-def check_chatgpt(ip_type):
-    return "可用(JP)"
+echo -e "${YELLOW}========== 本机 IPv4 + IPv6 多平台解锁检测 ==========${NC}"
+echo "检测到公网 IP：$ip_list"
+echo "==================================================="
 
-def check_hbomax(ip_type):
-    return "异常(301)"
+# 列宽设置
+TYPE_WIDTH=6
+IP_WIDTH=42
+COL_WIDTH=14
 
-def check_hulu(ip_type):
-    return "被封锁"
+# 居中输出函数（考虑颜色转义）
+center_text() {
+    local text="$1"
+    local width=$2
+    # 去掉颜色计算长度
+    local len=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g' | wc -m)
+    local padding=$(( (width - len) / 2 ))
+    local pad_left=$(printf "%*s" $padding "")
+    local pad_right=$(printf "%*s" $((width - len - padding)) "")
+    echo -n "${pad_left}${text}${pad_right}"
+}
 
-def check_prime(ip_type):
-    return "异常(000)"
+# 打印表头
+center_text "类型" $TYPE_WIDTH; echo -n " "
+center_text "IP地址" $IP_WIDTH; echo -n " "
+for col 在 "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"; do
+    center_text "$col" $COL_WIDTH
+    echo -n " "
+done
+echo
+printf "%0.s=" {1..150}; echo
 
-# ========= 工具 =========
-def get_public_ip(ipv6=False):
-    try:
-        url = IPV6_TEST_URL if ipv6 else IPV4_TEST_URL
-        return requests.get(url, timeout=5).text.strip()
-    except:
-        return "获取失败"
+# 检测函数
+check_ip() {
+    local ip=$1
+    local proto
+    [[ "$ip" == *:* ]] && proto="IPv6" || proto="IPv4"
 
-def print_table(results):
-    headers = ["类型", "IP地址", "Netflix", "Disney+", "YouTube", "ChatGPT", "HBO Max", "Hulu", "Prime Video"]
+    local nf ds yt cg hb hl pr
 
-    # 各列宽度
-    col_widths = [6, 38, 8, 8, 8, 8, 8, 8, 8]
+    # Netflix
+    nf_code1=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$NETFLIX_ORIGINAL")
+    nf_code2=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$NETFLIX_MOVIE")
+    if [ "$nf_code1" = "200" ] && [ "$nf_code2" = "200" ]; 键，然后 nf="${GREEN}完整解锁${NC}"
+    elif [ "$nf_code1" = "200" ]; then nf="${YELLOW}仅自制剧${NC}"
+    else nf="${RED}不可用${NC}"; fi
 
-    # 打印表头
-    header_line = "".join(h.ljust(w) for h, w in zip(headers, col_widths))
-    print(header_line)
-    print("=" * sum(col_widths))
+    # Disney+
+    ds_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$DISNEY_TEST")
+    if [ "$ds_code" = "200" ]; 键，然后 ds="${GREEN}可访问${NC}"
+    elif [ "$ds_code" = "403" ]; then ds="${RED}被封锁${NC}"
+    else ds="${YELLOW}异常($ds_code)${NC}"; fi
 
-    # 打印每一行
-    for row in results:
-        line = "".join(str(val).center(w) for val, w in zip(row, col_widths))
-        print(line)
+    # YouTube
+    yt_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$YOUTUBE_TEST")
+    if [ "$yt_code" = "200" ]; 键，然后 yt="${GREEN}可访问${NC}"
+    elif [ "$yt_code" = "403" ]; then yt="${RED}被封锁${NC}"
+    else yt="${YELLOW}异常($yt_code)${NC}"; fi
 
+    # ChatGPT
+    cg_res=$(curl --interface $ip -s --max-time 8 "$CHATGPT_TEST" 2>/dev/null | grep "loc=" | cut -d= -f2)
+    if [ -n "$cg_res" ]; then cg="${GREEN}可用($cg_res)${NC}"; else cg="${RED}不可用${NC}"; fi
 
-# ========= 主程序 =========
-def main():
-    print("========== 本机 IPv4 + IPv6 多平台解锁检测 ==========")
+    # HBO Max
+    hb_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$HBOMAX_TEST")
+    if [ "$hb_code" = "200" ]; 键，然后 hb="${GREEN}可访问${NC}"
+    elif [ "$hb_code" = "403" ]; then hb="${RED}被封锁${NC}"
+    else hb="${YELLOW}异常($hb_code)${NC}"; fi
 
-    ipv6 = get_public_ip(ipv6=True)
-    ipv4 = get_public_ip(ipv6=False)
+    # Hulu
+    hl_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$HULU_TEST")
+    if [ "$hl_code" = "200" ]; 键，然后 hl="${GREEN}可访问${NC}"
+    elif [ "$hl_code" = "403" ]; then hl="${RED}被封锁${NC}"
+    else hl="${YELLOW}异常($hl_code)${NC}"; fi
 
-    print("检测到公网 IP：")
-    print("IPv6:", ipv6)
-    print("IPv4:", ipv4)
-    print("===========================================")
+    # Prime Video
+    pr_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$PRIME_TEST")
+    if [ "$pr_code" = "200" ]; 键，然后 pr="${GREEN}可访问${NC}"
+    elif [ "$pr_code" = "403" ]; then pr="${RED}被封锁${NC}"
+    else pr="${YELLOW}异常($pr_code)${NC}"; fi
 
-    results = []
+    # 输出表格（和表头同样居中函数）
+    center_text "$proto" $TYPE_WIDTH; echo -n " "
+    center_text "$ip" $IP_WIDTH; echo -n " "
+    for result in "$nf" "$ds" "$yt" "$cg" "$hb" "$hl" "$pr"; do
+        center_text "$result" $COL_WIDTH
+        echo -n " "
+    done
+    echo
+}
 
-    if ipv6 and ipv6 != "获取失败":
-        results.append([
-            "IPv6", ipv6,
-            check_netflix("IPv6"), check_disney("IPv6"),
-            check_youtube("IPv6"), check_chatgpt("IPv6"),
-            check_hbomax("IPv6"), check_hulu("IPv6"),
-            check_prime("IPv6")
-        ])
+# 遍历 IP 检测
+for ip in $ip_list; do
+    check_ip "$ip"
+done
 
-    if ipv4 and ipv4 != "获取失败":
-        results.append([
-            "IPv4", ipv4,
-            check_netflix("IPv4"), check_disney("IPv4"),
-            check_youtube("IPv4"), check_chatgpt("IPv4"),
-            check_hbomax("IPv4"), check_hulu("IPv4"),
-            check_prime("IPv4")
-        ])
-
-    print_table(results)
-    print("\n========== 检测完成 ==========")
-
-
-if __name__ == "__main__":
-    main()
+echo -e "\n${YELLOW}========== 检测完成 ==========${NC}"
