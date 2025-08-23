@@ -1,7 +1,7 @@
 #!/bin/bash
 ###
-# IPv4 + IPv6 多平台解锁检测（整齐表格、居中、最佳列宽）
-# 作者：ChatGPT
+# IPv4 + IPv6 多平台解锁检测（仅公网，整齐表格）
+
 ###
 
 # 颜色
@@ -36,12 +36,12 @@ fi
 echo -e "${YELLOW}========== 本机 IPv4 + IPv6 多平台解锁检测 ==========${NC}"
 echo "检测到公网 IP：$ip_list"
 
-# 优化列宽（IPv6 长度足够，其他列紧凑）
+# 列宽设置
 TYPE_WIDTH=6
-IP_WIDTH=39
-COL_WIDTH=12
+IP_WIDTH=36
+COL_WIDTH=9
 
-# 居中输出函数（考虑颜色转义）
+# 居中输出函数
 center_text() {
     local text="$1"
     local width=$2
@@ -53,8 +53,8 @@ center_text() {
     echo -n "${pad_left}${text}${pad_right}"
 }
 
-# 表头列名
-cols=("Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video")
+# 表头
+cols=("Netflix" "Disney+" "YouTube" "ChatGPT" "HBO" "Hulu" "Prime")
 
 # 打印表头
 center_text "类型" $TYPE_WIDTH; echo -n " "
@@ -65,7 +65,7 @@ for col in "${cols[@]}"; do
 done
 echo
 
-# 动态分隔线长度
+# 分隔线长度
 total_width=$((TYPE_WIDTH + IP_WIDTH + COL_WIDTH * ${#cols[@]} + ${#cols[@]}))
 printf "%0.s=" $(seq 1 $total_width)
 echo
@@ -81,43 +81,43 @@ check_ip() {
     # Netflix
     nf_code1=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$NETFLIX_ORIGINAL")
     nf_code2=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$NETFLIX_MOVIE")
-    if [ "$nf_code1" = "200" ] && [ "$nf_code2" = "200" ]; then nf="${GREEN}完整解锁${NC}"
-    elif [ "$nf_code1" = "200" ]; then nf="${YELLOW}仅自制剧${NC}"
-    else nf="${RED}不可用${NC}"; fi
+    if [ "$nf_code1" = "200" ] && [ "$nf_code2" = "200" ]; then nf="${GREEN}完整${NC}"
+    elif [ "$nf_code1" = "200" ]; then nf="${YELLOW}自制${NC}"
+    else nf="${RED}不可${NC}"; fi
 
     # Disney+
     ds_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$DISNEY_TEST")
     if [ "$ds_code" = "200" ]; then ds="${GREEN}可访问${NC}"
-    elif [ "$ds_code" = "403" ]; then ds="${RED}被封锁${NC}"
-    else ds="${YELLOW}异常($ds_code)${NC}"; fi
+    elif [ "$ds_code" = "403" ]; then ds="${RED}封锁${NC}"
+    else ds="${YELLOW}异常${NC}"; fi
 
     # YouTube
     yt_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$YOUTUBE_TEST")
     if [ "$yt_code" = "200" ]; then yt="${GREEN}可访问${NC}"
-    elif [ "$yt_code" = "403" ]; then yt="${RED}被封锁${NC}"
-    else yt="${YELLOW}异常($yt_code)${NC}"; fi
+    elif [ "$yt_code" = "403" ]; then yt="${RED}封锁${NC}"
+    else yt="${YELLOW}异常${NC}"; fi
 
     # ChatGPT
     cg_res=$(curl --interface $ip -s --max-time 8 "$CHATGPT_TEST" 2>/dev/null | grep "loc=" | cut -d= -f2)
-    if [ -n "$cg_res" ]; then cg="${GREEN}可用($cg_res)${NC}"; else cg="${RED}不可用${NC}"; fi
+    if [ -n "$cg_res" ]; then cg="${GREEN}${cg_res}${NC}"; else cg="${RED}不可${NC}"; fi
 
     # HBO Max
     hb_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$HBOMAX_TEST")
     if [ "$hb_code" = "200" ]; then hb="${GREEN}可访问${NC}"
-    elif [ "$hb_code" = "403" ]; then hb="${RED}被封锁${NC}"
-    else hb="${YELLOW}异常($hb_code)${NC}"; fi
+    elif [ "$hb_code" = "403" ]; then hb="${RED}封锁${NC}"
+    else hb="${YELLOW}异常${NC}"; fi
 
     # Hulu
     hl_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$HULU_TEST")
     if [ "$hl_code" = "200" ]; then hl="${GREEN}可访问${NC}"
-    elif [ "$hl_code" = "403" ]; then hl="${RED}被封锁${NC}"
-    else hl="${YELLOW}异常($hl_code)${NC}"; fi
+    elif [ "$hl_code" = "403" ]; then hl="${RED}封锁${NC}"
+    else hl="${YELLOW}异常${NC}"; fi
 
     # Prime Video
     pr_code=$(curl --interface "$ip" -s -o /dev/null -m 8 -w "%{http_code}" "$PRIME_TEST")
     if [ "$pr_code" = "200" ]; then pr="${GREEN}可访问${NC}"
-    elif [ "$pr_code" = "403" ]; then pr="${RED}被封锁${NC}"
-    else pr="${YELLOW}异常($pr_code)${NC}"; fi
+    elif [ "$pr_code" = "403" ]; then pr="${RED}封锁${NC}"
+    else pr="${YELLOW}异常${NC}"; fi
 
     # 输出表格
     center_text "$proto" $TYPE_WIDTH; echo -n " "
