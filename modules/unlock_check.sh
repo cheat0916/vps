@@ -42,7 +42,7 @@ def print_table(results):
     headers = ["类型", "IP地址", "Netflix", "Disney+", "YouTube", "ChatGPT", "HBO Max", "Hulu", "Prime Video"]
 
     # 各列宽度
-    col_widths = [6, 40, 10, 10, 10, 10, 10, 10, 10]
+    col_widths = [5, 38, 8, 8, 8, 8, 8, 8, 8]
 
     # 打印表头
     header_line = "".join(h.ljust(w) for h, w in zip(headers, col_widths))
