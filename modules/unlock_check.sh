@@ -1,8 +1,8 @@
 #!/bin/bash
 ###
-# IPv4 + IPv6 多平台解锁检测模块（并行 + 高亮输出 + 超时）
+# IPv4 + IPv6 多平台解锁检测模块（并行 + 彩色对齐 + 超时）
 # 作者：ChatGPT
-# 依赖：curl, ip, awk, grep, column
+# 依赖：curl, ip, awk, grep
 ###
 
 # 颜色
@@ -21,12 +21,12 @@ HBOMAX_TEST="https://www.max.com/"
 HULU_TEST="https://www.hulu.com/"
 PRIME_TEST="https://www.primevideo.com/"
 
-# 获取本机 IPv6 地址（排除 link-local fe80::）
+# 获取 IPv6 地址（排除 link-local）
 ipv6_list=$(ip -6 addr | grep inet6 | grep -v fe80 | awk '{print $2}' | cut -d/ -f1)
-# 获取本机 IPv4 地址（排除回环 127.0.0.1）
+# 获取 IPv4 地址（排除回环）
 ipv4_list=$(ip -4 addr | grep inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1)
 
-# 合并 IP 类型
+# 合并 IP
 ip_list=""
 [ -n "$ipv6_list" ] && ip_list="$ip_list $ipv6_list"
 [ -n "$ipv4_list" ] && ip_list="$ip_list $ipv4_list"
@@ -90,6 +90,7 @@ check_ip() {
     elif [ "$pr_code" = "403" ]; then pr="${RED}被封锁${NC}"
     else pr="${YELLOW}异常($pr_code)${NC}"; fi
 
+    # 输出表格行
     printf "%-5s | %-40s | %-10s | %-8s | %-8s | %-15s | %-8s | %-8s | %-12s\n" \
         "$proto" "$ip" "$nf" "$ds" "$yt" "$cg" "$hb" "$hl" "$pr"
 }
@@ -99,7 +100,7 @@ printf "%-5s | %-40s | %-10s | %-8s | %-8s | %-15s | %-8s | %-8s | %-12s\n" \
     "类型" "IP地址" "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"
 printf "%s\n" "$(printf '=%.0s' {1..135})"
 
-# 并行检测
+# 并行检测每个 IP
 for ip in $ip_list; do
     check_ip "$ip" &
 done
