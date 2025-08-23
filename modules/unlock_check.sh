@@ -1,8 +1,8 @@
 #!/bin/bash
 ###
-# IPv4 + IPv6 多平台解锁检测模块（并行 + 彩色对齐）
+# IPv4 + IPv6 多平台解锁检测（公网 IP + 彩色表格）
 # 作者：ChatGPT
-# 依赖：curl, ip, awk, grep
+# 依赖：curl, awk, grep
 ###
 
 # 颜色
@@ -21,23 +21,21 @@ HBOMAX_TEST="https://www.max.com/"
 HULU_TEST="https://www.hulu.com/"
 PRIME_TEST="https://www.primevideo.com/"
 
-# 获取 IPv6 地址（排除 link-local 和回环）
-ipv6_list=$(ip -6 addr | grep inet6 | grep -v fe80 | grep -v "::1" | awk '{print $2}' | cut -d/ -f1)
-# 获取 IPv4 地址（排除回环）
-ipv4_list=$(ip -4 addr | grep inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1)
+# 获取公网 IP
+public_ipv4=$(curl -s https://api.ipify.org)
+public_ipv6=$(curl -6 -s https://api64.ipify.org)
 
-# 合并 IP
 ip_list=""
-[ -n "$ipv6_list" ] && ip_list="$ip_list $ipv6_list"
-[ -n "$ipv4_list" ] && ip_list="$ip_list $ipv4_list"
+[ -n "$public_ipv6" ] && ip_list="$ip_list $public_ipv6"
+[ -n "$public_ipv4" ] && ip_list="$ip_list $public_ipv4"
 
-if [ -z "$ip_list" ]; then
-    echo -e "${RED}未检测到可用 IPv4/IPv6 地址！${NC}"
+if [ -z "$ip_list" ]; 键，然后
+    echo -e "${RED}未检测到公网 IP，无法进行解锁检测！${NC}"
     exit 1
 fi
 
 echo -e "${YELLOW}========== 本机 IPv4 + IPv6 多平台解锁检测 ==========${NC}"
-echo "检测到 IP 地址："
+echo "检测到公网 IP："
 echo "$ip_list"
 echo "==========================================="
 
@@ -90,20 +88,30 @@ check_ip() {
     elif [ "$pr_code" = "403" ]; then pr="${RED}被封锁${NC}"
     else pr="${YELLOW}异常($pr_code)${NC}"; fi
 
-    # 输出表格行
-    printf "%-5s | %-40s | %-10s | %-8s | %-8s | %-15s | %-8s | %-8s | %-12s\n" \
-        "$proto" "$ip" "$nf" "$ds" "$yt" "$cg" "$hb" "$hl" "$pr"
+    # 输出表格行（去掉颜色用于 column 对齐）
+    nf_plain=$(echo -e "$nf" | sed 's/\x1b\[[0-9;]*m//g')
+    ds_plain=$(echo -e "$ds" | sed 's/\x1b\[[0-9;]*m//g')
+    yt_plain=$(echo -e "$yt" | sed 's/\x1b\[[0-9;]*m//g')
+    cg_plain=$(echo -e "$cg" | sed 's/\x1b\[[0-9;]*m//g')
+    hb_plain=$(echo -e "$hb" | sed 's/\x1b\[[0-9;]*m//g')
+    hl_plain=$(echo -e "$hl" | sed 's/\x1b\[[0-9;]*m//g')
+    pr_plain=$(echo -e "$pr" | sed 's/\x1b\[[0-9;]*m//g')
+
+    echo "$proto|$ip|$nf_plain|$ds_plain|$yt_plain|$cg_plain|$hb_plain|$hl_plain|$pr_plain"
 }
 
-# 输出表头
-printf "%-5s | %-40s | %-10s | %-8s | %-8s | %-15s | %-8s | %-8s | %-12s\n" \
-"类型" "IP地址" "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"
-printf "%s\n" "$(printf '=%.0s' {1..135})"
+# 输出表头（不带颜色，用 column 对齐）
+echo "类型|IP地址|Netflix|Disney+|YouTube|ChatGPT|HBO Max|Hulu|Prime Video"
+echo "$(printf '=%.0s' {1..120})"
 
 # 并行检测每个 IP
+results=""
 for ip in $ip_list; do
-    check_ip "$ip" &
+    results="$results
+$(check_ip "$ip")"
 done
-wait
+
+# 使用 column 对齐输出
+echo "$results" | column -t -s "|"
 
 echo -e "\n${YELLOW}========== 检测完成 ==========${NC}"
