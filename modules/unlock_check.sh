@@ -1,8 +1,7 @@
 #!/bin/bash
 ###
-# IPv4 + IPv6 多平台解锁检测（表头固定列宽 + IPv6 完整显示 + 彩色整齐）
+# IPv4 + IPv6 多平台解锁检测（整齐表格，结果居中）
 # 作者：ChatGPT
-# 依赖：curl
 ###
 
 # 颜色
@@ -38,14 +37,30 @@ echo -e "${YELLOW}========== 本机 IPv4 + IPv6 多平台解锁检测 ==========
 echo "检测到公网 IP：$ip_list"
 echo "==================================================="
 
-# 设置固定列宽（IP列放大到 50）
-# 类型 6, IP 50, Netflix 15, Disney+ 12, YouTube 12, ChatGPT 18, HBO Max 12, Hulu 12, Prime Video 15
-FORMAT="%-6s %-50s %-15s %-12s %-12s %-18s %-12s %-12s %-15s\n"
+# 列宽设置
+TYPE_WIDTH=6
+IP_WIDTH=42
+COL_WIDTH=14
 
-# 输出表头
-printf "$FORMAT" "类型" "IP地址" "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"
-printf "%0.s=" {1..155}
+# 居中输出函数
+center_text() {
+    local text="$1"
+    local width=$2
+    local len=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g' | wc -m)
+    local padding=$(( (width - len) / 2 ))
+    local pad_left=$(printf "%*s" $padding "")
+    local pad_right=$(printf "%*s" $((width - len - padding)) "")
+    echo -n "${pad_left}${text}${pad_right}"
+}
+
+# 打印表头
+printf "%-${TYPE_WIDTH}s %-${IP_WIDTH}s" "类型" "IP地址"
+for col in "Netflix" "Disney+" "YouTube" "ChatGPT" "HBO Max" "Hulu" "Prime Video"; do
+    center_text "$col" $COL_WIDTH
+    echo -n " "
+done
 echo
+printf "%0.s=" {1..150}; echo
 
 # 检测函数
 check_ip() {
@@ -96,8 +111,13 @@ check_ip() {
     elif [ "$pr_code" = "403" ]; then pr="${RED}被封锁${NC}"
     else pr="${YELLOW}异常($pr_code)${NC}"; fi
 
-    # 输出固定列宽表格
-    printf "$FORMAT" "$proto" "$ip" "$nf" "$ds" "$yt" "$cg" "$hb" "$hl" "$pr"
+    # 输出表格
+    printf "%-${TYPE_WIDTH}s %-${IP_WIDTH}s" "$proto" "$ip"
+    for result in "$nf" "$ds" "$yt" "$cg" "$hb" "$hl" "$pr"; do
+        center_text "$result" $COL_WIDTH
+        echo -n " "
+    done
+    echo
 }
 
 # 遍历 IP 检测
